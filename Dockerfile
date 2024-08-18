@@ -32,8 +32,17 @@ RUN apk add --no-cache \
     su-exec \
     && rm -rf /var/cache/apk/*
 
-# Install necessary PHP extensions 
+# Install GD PHP extension
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install gd
+
+# Install MySQL PHP extension
 RUN docker-php-ext-install pdo pdo_mysql mysqli
+
+# Ensure Nginx temporary directories have the correct permissions
+RUN mkdir -p /var/lib/nginx/tmp && \
+    chown -R www-data:www-data /var/lib/nginx && \
+    chmod -R 755 /var/lib/nginx
 
 # Create the Nginx configuration directory
 RUN mkdir -p /etc/nginx/conf.d
@@ -45,7 +54,9 @@ RUN mkdir -p /var/log/supervisord /var/run/supervisord
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Set up the PHP-FPM configuration
-RUN sed -i "s|;daemonize = yes|daemonize = no|" /usr/local/etc/php-fpm.d/zz-docker.conf && \
+RUN mkdir -p /run/nginx && \
+    mkdir -p /var/www/html && \
+    sed -i "s|;daemonize = yes|daemonize = no|" /usr/local/etc/php-fpm.d/zz-docker.conf && \
     sed -i "s|listen = /var/run/php/php-fpm.sock|listen = 9000|" /usr/local/etc/php-fpm.d/zz-docker.conf && \
     sed -i "s|;listen.owner = nobody|listen.owner = www-data|" /usr/local/etc/php-fpm.d/zz-docker.conf && \
     sed -i "s|;listen.group = nobody|listen.group = www-data|" /usr/local/etc/php-fpm.d/zz-docker.conf && \
@@ -61,11 +72,6 @@ RUN echo "upload_max_filesize = 100M" > /usr/local/etc/php/conf.d/uploads.ini &&
 
 # Set up Nginx configuration
 COPY ./nginx.conf /etc/nginx/nginx.conf
-
-# Ensure Nginx temporary directories have the correct permissions
-RUN mkdir -p /var/lib/nginx/tmp && \
-    chown -R www-data:www-data /var/lib/nginx && \
-    chmod -R 755 /var/lib/nginx
 
 # Supervisor configuration to manage Nginx and PHP-FPM
 COPY ./supervisord.conf /etc/supervisord.conf

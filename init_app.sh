@@ -106,4 +106,9 @@ echo "Fixing permissions..."
 find "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" -type d -exec chmod 775 {} \; -exec chown www-data:www-data {} \;
 find "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" -type f ! -name ".gitignore" -exec chmod 664 {} \; -exec chown www-data:www-data {} \;
 
+# Run php artisan storage:link as hostuser
+echo "Creating storage symlink..."
+cd "$APP_DIR"
+su-exec hostuser:hostgroup php artisan storage:link
+
 echo "Application setup completed for $APP_NAME with domain $DOMAIN. Nginx configuration saved as $NGINX_CONF_FILE."
