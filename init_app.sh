@@ -69,6 +69,9 @@ server {
     root $APP_DIR/public;
     index index.php index.html;
 
+    client_max_body_size 100M;  # Increase the max upload file size
+    proxy_read_timeout 300s;    # Increase the proxy read timeout
+
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
         proxy_set_header X-Forwarded-Proto https;
@@ -80,6 +83,9 @@ server {
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         fastcgi_param HTTPS on;
+        fastcgi_connect_timeout 300s;  # Increase the fastcgi connect timeout
+        fastcgi_send_timeout 300s;     # Increase the fastcgi send timeout
+        fastcgi_read_timeout 300s;     # Increase the fastcgi read timeout
     }
 
     location ~ /\.ht {
@@ -88,7 +94,6 @@ server {
 }
 EOF
 
-
 # Reload Nginx to apply the new configuration
 echo "Reloading Nginx..."
 nginx -s reload
@@ -96,9 +101,9 @@ nginx -s reload
 # Ensure storage and cache directories exist
 mkdir -p "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
 
-# Set the necessary directories to be writable by www-data
+# Set the necessary directories to be writable by www-data, excluding .gitignore files
 echo "Fixing permissions..."
-chown -R www-data:www-data "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
-chmod -R 775 "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
+find "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" -type d -exec chmod 775 {} \; -exec chown www-data:www-data {} \;
+find "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" -type f ! -name ".gitignore" -exec chmod 664 {} \; -exec chown www-data:www-data {} \;
 
 echo "Application setup completed for $APP_NAME with domain $DOMAIN. Nginx configuration saved as $NGINX_CONF_FILE."

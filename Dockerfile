@@ -52,8 +52,20 @@ RUN sed -i "s|;daemonize = yes|daemonize = no|" /usr/local/etc/php-fpm.d/zz-dock
     sed -i "s|user = nobody|user = www-data|" /usr/local/etc/php-fpm.d/zz-docker.conf && \
     sed -i "s|group = nobody|group = www-data|" /usr/local/etc/php-fpm.d/zz-docker.conf
 
+# Increase PHP-FPM settings
+RUN echo "upload_max_filesize = 100M" > /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_input_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # Set up Nginx configuration
 COPY ./nginx.conf /etc/nginx/nginx.conf
+
+# Ensure Nginx temporary directories have the correct permissions
+RUN mkdir -p /var/lib/nginx/tmp && \
+    chown -R www-data:www-data /var/lib/nginx && \
+    chmod -R 755 /var/lib/nginx
 
 # Supervisor configuration to manage Nginx and PHP-FPM
 COPY ./supervisord.conf /etc/supervisord.conf
