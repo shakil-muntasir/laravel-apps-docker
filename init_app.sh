@@ -94,17 +94,25 @@ server {
 }
 EOF
 
+# Ensure necessary directories exist
+mkdir -p "$APP_DIR/storage/framework/cache" "$APP_DIR/storage/framework/sessions" \
+         "$APP_DIR/storage/framework/views" "$APP_DIR/storage/logs" \
+         "$APP_DIR/storage/app/public" "$APP_DIR/bootstrap/cache"
+
+# Set the necessary directories to be writable by www-data, excluding .gitignore files
+echo "Fixing permissions for writable directories..."
+find "$APP_DIR/storage/framework" "$APP_DIR/storage/logs" "$APP_DIR/storage/app/public" "$APP_DIR/bootstrap/cache" \
+     -type d -exec chmod 775 {} \; -exec chown www-data:www-data {} \;
+find "$APP_DIR/storage/framework" "$APP_DIR/storage/logs" "$APP_DIR/storage/app/public" "$APP_DIR/bootstrap/cache" \
+     -type f ! -name ".gitignore" -exec chmod 664 {} \; -exec chown www-data:www-data {} \;
+
+# Set the rest of the files to be owned by the host user, excluding .gitignore files
+echo "Setting ownership for other files..."
+find "$APP_DIR" -type f ! -name ".gitignore" -exec chown hostuser:hostgroup {} \;
+
 # Reload Nginx to apply the new configuration
 echo "Reloading Nginx..."
 nginx -s reload
-
-# Ensure storage and cache directories exist
-mkdir -p "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
-
-# Set the necessary directories to be writable by www-data, excluding .gitignore files
-echo "Fixing permissions..."
-find "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" -type d -exec chmod 775 {} \; -exec chown www-data:www-data {} \;
-find "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" -type f ! -name ".gitignore" -exec chmod 664 {} \; -exec chown www-data:www-data {} \;
 
 # Run php artisan storage:link as hostuser
 echo "Creating storage symlink..."
