@@ -76,8 +76,10 @@ COPY ./nginx.conf /etc/nginx/nginx.conf
 # Supervisor configuration to manage Nginx and PHP-FPM
 COPY ./supervisord.conf /etc/supervisord.conf
 
-# Dynamic Nginx configuration and setup script
+# Dynamic Nginx configuration and setup scripts
 COPY ./init_app.sh /usr/local/bin/init_app
+# Copy the init_apps script
+COPY ./init_apps.sh /usr/local/bin/init_apps
 
 # Set up the directory for Laravel apps and set the correct ownership
 RUN mkdir -p /var/www/laravel-apps && \
@@ -89,11 +91,11 @@ WORKDIR /var/www/laravel-apps
 # Expose port 80
 EXPOSE 80
 
-# Make the init_app script executable and available in PATH
-RUN chmod +x /usr/local/bin/init_app
+# Make the init_app and init_apps scripts executable and available in PATH
+RUN chmod +x /usr/local/bin/init_app /usr/local/bin/init_apps
 
 # Suppress NPM update notifier warnings
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
-# Start Nginx, PHP-FPM, and the dynamic config script
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+# Start the init_apps script and then supervisor to manage services
+CMD ["/bin/sh", "-c", "/usr/local/bin/init_apps && /usr/bin/supervisord -c /etc/supervisord.conf"]
