@@ -51,8 +51,7 @@ NGINX_CONF_FILE="${DOMAIN}.conf"
 # Check if Nginx config already exists
 if [ -f "$NGINX_CONF_DIR/$NGINX_CONF_FILE" ]; then
     echo "Nginx configuration already exists for $DOMAIN."
-    exit 0
-fi
+else
 
 echo "Setting up the application in $APP_DIR with domain $DOMAIN..."
 
@@ -90,6 +89,8 @@ server {
     }
 }
 EOF
+
+fi
 
 # Ensure necessary directories exist
 mkdir -p "$APP_DIR/bootstrap/cache"  # Ensure bootstrap/cache exists
